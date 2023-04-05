@@ -1,0 +1,99 @@
+M & S
+
+sudo apt update -y
+sudo apt install docker.io -y
+
+sudo systemctl start docker
+sudo systemctl enable docker
+
+sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+sudo apt update -y
+sudo apt install kubeadm=1.20.0-00 kubectl=1.20.0-00 kubelet=1.20.0-00 -y
+
+
+M
+
+sudo kubeadm init
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+
+deploy.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+
+np.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-ninx-deployment-np
+
+spec:
+  type: NodePort
+  ports:
+    - targetPort: 80
+      port: 80
+      nodePort: 31008
+  selector:
+    app: nginx
+    
+    
+    
+MK
+
+sudo apt update
+sudo apt install docker.io
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+sudo dpkg -i minikube_latest_amd64.deb
+sudo chmod 777 /var/run/docker.sock
+minikube start
+sudo snap install kubectl --classic
+minikube addons enable ingress
+
+ingress.yaml
+
+apiVersion: networking.k8s.io/v1                                                                                                                              
+kind: Ingress                                                                                                                                                 
+metadata:                                                                                                                                                     
+ name: ingress                                                                                                                                               
+ annotations:                                                                                                                                                
+   nginx.ingress.kubernetes.io/rewrite-target: /                                                                                                             
+spec:      
+ ingressClassName: nginx  
+ rules:                                                                                                                                                      
+  - http:                                                                                                                                                     
+     paths:                                                                                                                                                  
+     - path: /nginx                                                                                                                                          
+       pathType: Prefix                                                                                                                                      
+       backend:                                                                                                                                              
+         service:                                                                                                                                            
+           name: nginx                                                                                                                                       
+           port:                                                                                                                                             
+             number: 80
